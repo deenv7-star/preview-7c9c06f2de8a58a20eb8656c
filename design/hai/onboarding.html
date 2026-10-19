@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>הקמפיינר · נכיר</title>
+<script src="icons.js"></script>
+<script src="icons-onb.js"></script>
+<style>
+@font-face{font-family:K;src:url(fonts/Karantina-Bold.ttf);font-weight:700;font-display:block}
+@font-face{font-family:K;src:url(fonts/Karantina-Regular.ttf);font-weight:400;font-display:block}
+@font-face{font-family:R;src:url(fonts/Rubik.ttf);font-weight:300 900;font-display:block}
+:root{
+  --paper:#F3F2EE;--ink:#0B0B0B;--lime:#D4FF00;--card:#FBFAF7;--mute:#6B6962;--em:#8C8A83;--hair:#E1DFD8;--ink2:#1A1A19;--fb:#0866FF;
+  --ease:cubic-bezier(.23,1,.32,1);--io:cubic-bezier(.77,0,.175,1);--spring:cubic-bezier(.34,1.5,.64,1);
+  --agent:120px;--line:96px;--col:860px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:clip}
+body{font-family:R,system-ui,sans-serif;background:var(--paper);color:var(--ink);overflow:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button,input{font:inherit;color:inherit;background:none;border:0}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+svg.i{width:1em;height:1em;display:block;flex:none}
+:focus{outline:none}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.tint{position:fixed;inset:0;background:var(--lime);opacity:0;transition:opacity .32s var(--ease);pointer-events:none;z-index:0}
+body.listening .tint{opacity:1}
+
+.stage{position:relative;z-index:1;height:100%;display:flex;justify-content:center}
+.col{position:relative;width:min(var(--col),calc(100% - 64px));height:100%;display:flex;flex-direction:column;align-items:center}
+
+/* top: back · ribbon · skip */
+.top{width:100%;display:flex;align-items:center;gap:12px;padding-top:22px;height:80px;flex:none}
+.ibtn{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:20px;flex:none;background:var(--card);box-shadow:inset 0 0 0 1px var(--hair);transition:opacity .25s var(--ease),transform .16s var(--ease)}
+.ibtn:active,.ibtn.press{transform:scale(.92)}
+.ibtn[disabled]{opacity:0;pointer-events:none}
+.ribbon{position:relative;flex:1;min-width:0;height:48px;border-radius:24px;background:rgba(11,11,11,.045);display:flex;align-items:center;padding:0 8px;overflow:hidden;transition:background .3s}
+body.listening .ribbon{background:rgba(11,11,11,.07)}
+.rb-track{flex:1;display:flex;align-items:center;gap:6px;justify-content:flex-start;overflow:hidden;min-width:0;
+}
+.rb-track.over{-webkit-mask-image:linear-gradient(to right,#000 82%,transparent 99%);mask-image:linear-gradient(to right,#000 82%,transparent 99%)}
+.rb-empty{font-size:13.5px;color:var(--mute);padding:0 8px;white-space:nowrap;transition:opacity .3s}
+.chip{flex:none;height:34px;border-radius:17px;padding:0 13px;display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;white-space:nowrap;background:var(--ink);color:var(--paper);position:relative;
+  opacity:0;transform:translateX(10px) scale(.96);transition:opacity .3s var(--ease),transform .4s var(--ease),background .2s}
+.chip:after{content:"";position:absolute;inset:-7px -3px}
+.chip.in{opacity:1;transform:none}
+.chip svg{font-size:12px;opacity:.55}
+.chip.skip{background:transparent;color:var(--mute);box-shadow:inset 0 0 0 1.5px #CFCDC6}
+.chip.cur{background:var(--lime);color:var(--ink)}
+.chip.cur svg{opacity:1}
+.skipb{height:48px;padding:0 18px;border-radius:24px;font-size:15px;font-weight:600;color:var(--ink);background:var(--card);box-shadow:inset 0 0 0 1px var(--hair);flex:none;transition:opacity .25s var(--ease),transform .16s var(--ease)}
+.skipb[hidden]{display:block;opacity:0;pointer-events:none}
+.skipb.press{transform:scale(.95)}
+
+/* presence */
+.presence{flex:none;display:flex;flex-direction:column;align-items:center;margin-top:18px;transition:margin .5s var(--io)}
+.agent{position:relative;width:var(--agent);height:var(--agent);transition:width .5s var(--io),height .5s var(--io)}
+.agent .ag{width:100%;height:100%;overflow:visible;transform-origin:30% 90%;transition:transform .45s var(--spring)}
+.ag-body{transform-box:fill-box;transform-origin:50% 100%;animation:breathe 3.6s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.018,.985)}}
+.ag .bub,.ag .leg{fill:var(--ink)}
+.ag .sclera{fill:var(--paper)}
+.ag .pupil{fill:var(--ink);transform-box:fill-box;transform-origin:center;transition:transform .35s var(--ease),translate .35s var(--ease);translate:var(--lx,0) var(--ly,0)}
+.ag .eye{transform-box:fill-box;transform-origin:center;animation:blink 4.4s infinite;transition:opacity .2s}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.ag .heyes{fill:none;stroke:var(--paper);stroke-width:3.4;stroke-linecap:round;opacity:0;transition:opacity .2s}
+.ag .mouth{opacity:0;transition:opacity .18s}
+.ag .m-smile{fill:none;stroke:var(--paper);stroke-width:3;stroke-linecap:round}
+.ag .m-flat{fill:none;stroke:var(--paper);stroke-width:3;stroke-linecap:round}
+.ag .m-o{fill:var(--paper)}
+.ag .m-big{fill:var(--lime)}
+.agent .m-smile{opacity:1}
+.ag .arm{fill:none;stroke:var(--ink);stroke-width:9;stroke-linecap:round;opacity:0;transform-box:view-box;transform-origin:84px 50px;transition:opacity .2s}
+.agent .shadow{position:absolute;left:18%;right:22%;bottom:-6px;height:8px;border-radius:50%;background:rgba(11,11,11,.12);filter:blur(2px);transition:transform .45s var(--spring)}
+.agent.listen .ag{transform:rotate(-8deg) translate(4px,6px) scale(1.08)}
+.agent.listen .eye{animation:none;transform:scale(1.07)}
+.agent.listen .pupil{transform:translate(-1.2px,1.6px) scale(1.12)}
+.agent.listen .m-smile{opacity:0}.agent.listen .m-o{opacity:1}
+.agent.think .ag-body{animation:bob 1.1s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-3px) rotate(1.5deg)}}
+.agent.think .pupil{transform:translate(1.8px,-2.6px)}
+.agent.think .m-smile{opacity:0}.agent.think .m-flat{opacity:1}
+.agent.talk .m-smile{animation:talkA .32s steps(1) infinite}
+.agent.talk .m-o{animation:talkB .32s steps(1) infinite}
+@keyframes talkA{0%{opacity:1}50%{opacity:0}}
+@keyframes talkB{0%{opacity:0}50%{opacity:1}}
+.agent.happy .eye,.agent.wave .eye{opacity:0}
+.agent.happy .heyes,.agent.wave .heyes{opacity:1}
+.agent.happy .m-smile,.agent.wave .m-smile{opacity:0}
+.agent.happy .m-big,.agent.wave .m-big{opacity:1}
+.agent.happy .ag{animation:hop .72s 2}
+@keyframes hop{0%{transform:none;animation-timing-function:cubic-bezier(.2,.8,.3,1)}35%{transform:translateY(-16px) rotate(-4deg) scale(1.04);animation-timing-function:cubic-bezier(.6,0,.8,.4)}62%{transform:translateY(0) scale(1.05,.95)}100%{transform:none}}
+.agent.wave .arm{opacity:1;animation:wave .9s var(--ease) 3}
+@keyframes wave{0%,100%{transform:rotate(0)}30%{transform:rotate(-26deg)}65%{transform:rotate(10deg)}}
+.agent.nod .ag{animation:nod .9s var(--ease)}
+@keyframes nod{0%,100%{transform:none}25%{transform:rotate(7deg) translateY(3px)}50%{transform:rotate(-2deg)}75%{transform:rotate(5deg) translateY(2px)}}
+.agent.nod .m-smile{opacity:1}
+/* tasteful burst */
+.burst{position:absolute;left:50%;top:44%;width:0;height:0;pointer-events:none}
+.burst i{position:absolute;width:10px;height:10px;margin:-5px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 2px var(--ink);opacity:0}
+.burst.go i{animation:pop .9s var(--ease) forwards}
+@keyframes pop{0%{opacity:1;transform:translate(0,0) scale(.4)}70%{opacity:1}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(1)}}
+
+.status{margin-top:12px;min-height:20px;font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:10px;transition:opacity .3s}
+.status .lv{display:flex;gap:2px;align-items:center;height:12px}
+.status .lv i{width:2px;height:100%;background:currentColor;border-radius:1px;animation:lv .5s ease-in-out infinite alternate}
+.status .lv i:nth-child(2){animation-delay:-.2s}.status .lv i:nth-child(3){animation-delay:-.35s}
+@keyframes lv{from{transform:scaleY(.25)}to{transform:scaleY(1)}}
+.prog{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:500;color:var(--mute)}
+.dots{display:flex;gap:5px}
+.dots i{width:7px;height:7px;border-radius:4px;background:#D3D1CA;transition:background .3s,width .4s var(--ease)}
+.dots i.done{background:var(--ink)}
+.dots i.now{background:var(--ink);width:20px}
+body.listening .dots i{background:rgba(11,11,11,.2)}body.listening .dots i.done,body.listening .dots i.now{background:var(--ink)}
+body.listening .prog{color:var(--ink)}
+
+/* line */
+.line{flex:none;margin-top:18px;max-width:840px;text-align:center;font-family:K;font-weight:700;font-size:var(--line);line-height:.92;letter-spacing:-.005em;min-height:.92em;transition:font-size .5s var(--io),margin .5s var(--io)}
+.line em{font-style:normal;color:var(--em)}
+.line.compact{--line:72px}
+body.listening .line{font-size:132px;margin-top:80px}
+body.listening .line em{color:rgba(11,11,11,.42)}
+.line .w{display:inline-block;opacity:0;transform:translateY(.18em);filter:blur(6px);transition:opacity .38s var(--ease),transform .5s var(--ease),filter .38s var(--ease)}
+.line .w.in{opacity:1;transform:none;filter:none}
+.line.out{opacity:0;transform:translateY(-14px);transition:opacity .25s var(--ease),transform .3s var(--ease)}
+.caret{display:inline-block;width:.06em;height:.7em;background:var(--ink);margin-right:.08em;vertical-align:-.02em;animation:car .8s steps(1) infinite}
+@keyframes car{50%{opacity:0}}
+
+body.tight{--agent:76px}
+body.tight .presence{margin-top:6px}
+body.tight .line{margin-top:12px}
+
+/* answers */
+.answers{position:relative;flex:1;width:100%;margin-top:30px;min-height:0}
+body.tight .answers{margin-top:22px}
+.mom{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center}
+.pop{opacity:0;transform:translateY(18px) scale(.97);transition:opacity .42s var(--ease),transform .55s var(--ease)}
+.pop.in{opacity:1;transform:none}
+.leave{opacity:0 !important;transform:translateY(22px) scale(.96) !important;transition:opacity .22s var(--ease),transform .3s var(--ease) !important}
+.press{transform:scale(.97) !important}
+
+/* big text field */
+.field{width:min(640px,100%);display:flex;align-items:center;gap:16px;border-bottom:3px solid var(--ink);padding:0 4px 6px;transition:border-color .2s}
+.field .pre{font-size:34px;color:var(--mute);flex:none}
+.field input{flex:1;min-width:0;font-family:K;font-weight:700;font-size:92px;line-height:1;height:96px;caret-color:var(--ink);text-align:right}
+.field input::placeholder{color:#C9C7C0}
+.field.tel input{font-family:R;font-weight:600;font-size:52px;letter-spacing:.02em;height:80px;direction:ltr;text-align:right;font-variant-numeric:tabular-nums}
+.field.tel input::placeholder{font-weight:500}
+.fhint{margin-top:14px;font-size:15px;color:var(--mute);display:flex;align-items:center;gap:8px}
+.fhint svg{font-size:17px}
+.next{margin-top:26px;height:72px;min-width:240px;padding:0 34px;border-radius:24px;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;justify-content:center;gap:12px;font-size:20px;font-weight:600;transition:transform .16s var(--ease),opacity .3s var(--ease),background .2s}
+.next svg{font-size:22px;color:var(--lime)}
+.next[disabled]{opacity:.28;pointer-events:none}
+.ghost{margin-top:12px;height:52px;padding:0 22px;border-radius:18px;font-size:16px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:5px;text-decoration-color:#B9B7B0}
+
+/* business type tiles */
+.types{width:100%;display:grid;grid-template-columns:1.15fr 1.15fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:12px;height:300px}
+.tt{position:relative;border-radius:26px;background:var(--card);box-shadow:inset 0 0 0 1px var(--hair);display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;padding:18px 20px;text-align:right;overflow:hidden;transition:transform .16s var(--ease),box-shadow .2s,opacity .35s var(--ease)}
+.tt .ic{width:52px;height:52px;border-radius:16px;background:var(--paper);display:grid;place-items:center;font-size:27px}
+.tt b{font-family:K;font-weight:700;font-size:40px;line-height:.9}
+.tt.photo{grid-row:span 2;padding:0;background:var(--ink);color:var(--paper);box-shadow:none;justify-content:flex-end}
+.tt.photo .ph{position:absolute;inset:0;background-size:cover;background-position:center}
+.tt.photo .ph:after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(11,11,11,.82) 6%,rgba(11,11,11,0) 52%)}
+.tt.photo b{position:relative;font-size:56px;padding:0 22px 20px}
+.tick{position:absolute;top:14px;left:14px;width:40px;height:40px;border-radius:50%;background:var(--lime);color:var(--ink);display:grid;place-items:center;font-size:20px;opacity:0;transform:scale(.6) rotate(-20deg);transition:opacity .2s,transform .45s var(--spring);z-index:2}
+.sel>.tick,[aria-pressed="true"]>.tick{opacity:1;transform:none}
+.tt[aria-pressed="true"]{box-shadow:inset 0 0 0 3px var(--ink)}
+.tt.photo[aria-pressed="true"]{box-shadow:0 0 0 3px var(--ink)}
+.types.decided .tt[aria-pressed="false"]{opacity:.25}
+.other{margin-top:16px;font-size:15.5px;color:var(--mute)}
+.other button{height:44px;padding:0 6px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:5px;text-decoration-color:#B9B7B0}
+
+/* location */
+.locbtn{width:min(560px,100%);height:84px;border-radius:28px;background:var(--lime);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:14px;font-family:K;font-weight:700;font-size:46px;transition:transform .16s var(--ease)}
+.locbtn svg{font-size:32px}
+.locbtn.busy svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.or{margin:18px 0 6px;font-size:15px;color:var(--mute)}
+.field.sm input{font-size:72px;height:80px}
+.found{margin-top:14px;height:40px;padding:0 16px;border-radius:20px;background:var(--ink);color:var(--paper);display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:500;opacity:0;transform:translateY(6px);transition:opacity .3s var(--ease),transform .4s var(--ease)}
+.found svg{color:var(--lime);font-size:17px}
+.found.in{opacity:1;transform:none}
+
+/* chips groups */
+.grp{width:100%;max-width:720px;display:flex;flex-direction:column;align-items:center}
+.grp+.grp{margin-top:26px}
+.grp h3{font-size:15px;font-weight:600;color:var(--mute);margin-bottom:12px}
+.opts{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.opt{position:relative;height:60px;padding:0 24px;border-radius:20px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--hair);font-size:19px;font-weight:600;display:inline-flex;align-items:center;gap:8px;transition:transform .16s var(--ease),background .2s,color .2s,box-shadow .2s;font-variant-numeric:tabular-nums}
+.opt svg{font-size:18px;width:0;opacity:0;transition:width .3s var(--ease),opacity .2s}
+.opt[aria-pressed="true"]{background:var(--ink);color:var(--paper);box-shadow:none}
+.opt[aria-pressed="true"] svg{width:18px;opacity:1;color:var(--lime)}
+.opt.add{color:var(--mute);box-shadow:inset 0 0 0 1.5px #CFCDC6;background:transparent}
+.opt.add svg{width:18px;opacity:1}
+
+/* audience tiles */
+.aud{width:100%;display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.at{position:relative;height:196px;border-radius:26px;background:var(--card);box-shadow:inset 0 0 0 1px var(--hair);display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;padding:18px 18px 20px;text-align:right;transition:transform .16s var(--ease),box-shadow .2s,background .2s}
+.at .ic{width:52px;height:52px;border-radius:16px;background:var(--paper);display:grid;place-items:center;font-size:27px;transition:background .2s}
+.at b{display:block;font-family:K;font-weight:700;font-size:40px;line-height:.9}
+.at span{display:block;font-size:14.5px;color:var(--mute);margin-top:4px}
+.at[aria-pressed="true"]{box-shadow:inset 0 0 0 3px var(--ink)}
+.at[aria-pressed="true"] .ic{background:var(--lime)}
+
+/* social */
+.field.ig .pre{width:52px;height:52px;border-radius:16px;background:var(--ink);color:var(--lime);display:grid;place-items:center;font-size:28px}
+.field.ig input{font-family:R;font-weight:600;font-size:46px;height:76px;direction:ltr;text-align:right}
+.field.ig input::placeholder{font-weight:500}
+
+/* photos */
+.drop{position:relative;width:min(720px,100%);height:250px;border-radius:30px;border:2.5px dashed #BEBCB4;background:rgba(251,250,247,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:height .5s var(--io),border-color .2s,background .2s,transform .16s var(--ease)}
+.drop .ic{width:72px;height:72px;border-radius:24px;background:var(--ink);color:var(--lime);display:grid;place-items:center;font-size:34px}
+.drop b{font-family:K;font-weight:700;font-size:46px;line-height:.9;margin-top:6px}
+.drop span{font-size:15px;color:var(--mute)}
+.drop.has{height:96px;flex-direction:row;gap:14px;border-color:#CFCDC6}
+.drop.has .ic{width:52px;height:52px;border-radius:16px;font-size:24px}
+.drop.has b{font-size:34px;margin:0}
+.drop.has span{display:none}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.thumbs{width:100%;display:flex;gap:12px;margin-top:16px;min-height:0;justify-content:center}
+.th{position:relative;width:128px;height:128px;border-radius:22px;background-size:cover;background-position:center;opacity:0;transform:translateY(20px) scale(.85) rotate(var(--r,0deg));transition:opacity .35s var(--ease),transform .6s var(--spring)}
+.th.in{opacity:1;transform:rotate(var(--r,0deg))}
+.th .tick{opacity:1;transform:none;top:auto;bottom:8px;left:8px;width:30px;height:30px;font-size:15px}
+
+/* facebook */
+.fbcard{width:min(600px,100%);display:flex;flex-direction:column;align-items:center}
+.fbbtn{position:relative;overflow:hidden;width:100%;height:88px;border-radius:28px;background:var(--fb);color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;font-size:23px;font-weight:600;transition:transform .16s var(--ease),background .3s}
+.fbbtn svg{font-size:34px}
+.fbbtn .bar{position:absolute;inset:0;background:rgba(255,255,255,.18);transform:scaleX(0);transform-origin:100% 50%;transition:transform 1.2s var(--io)}
+.fbbtn.busy .bar{transform:scaleX(1)}
+.fbbtn .l1,.fbbtn .l2{position:relative;display:flex;align-items:center;gap:14px;transition:opacity .25s,transform .4s var(--ease)}
+.fbbtn .l2{position:absolute;opacity:0;transform:translateY(18px)}
+.fbbtn.done{background:var(--ink)}
+.fbbtn.done .l1{opacity:0;transform:translateY(-18px)}
+.fbbtn.done .l2{opacity:1;transform:none}
+.fbbtn.done .l2 svg{color:var(--lime)}
+.promise{margin-top:20px;width:100%;display:flex;flex-direction:column;gap:2px;border-radius:24px;background:var(--card);box-shadow:inset 0 0 0 1px var(--hair);padding:8px 20px}
+.promise div{display:flex;align-items:center;gap:14px;min-height:56px;font-size:17px;font-weight:500}
+.promise div+div{border-top:1px solid var(--hair)}
+.promise svg{font-size:22px;flex:none}
+.promise .k{width:36px;height:36px;border-radius:12px;background:var(--lime);display:grid;place-items:center;flex:none}
+.promise .k svg{font-size:19px}
+
+/* finale: profile card */
+.pcard{position:relative;width:100%;max-width:820px;border-radius:34px;background:var(--ink);color:var(--paper);padding:14px;display:grid;grid-template-columns:1.25fr 1fr;gap:14px;
+  opacity:0;transform:translateY(40px) scale(.96);transition:opacity .4s var(--ease),transform .7s var(--spring)}
+.pcard.in{opacity:1;transform:none}
+.pmain{border-radius:24px;background:var(--paper);color:var(--ink);padding:22px 24px;display:flex;flex-direction:column;gap:0}
+.pwho{display:flex;align-items:center;gap:14px}
+.pwho .av{width:64px;height:64px;border-radius:20px;background:url(img/nails4.jpg) center/cover;flex:none}
+.pwho b{display:block;font-family:K;font-weight:700;font-size:54px;line-height:.86}
+.pwho small{display:flex;align-items:center;gap:6px;font-size:14.5px;color:var(--mute);margin-top:4px}
+.pwho small svg{font-size:15px}
+.prow{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-top:1px solid var(--hair);font-size:16px;font-weight:500;line-height:1.35}
+.pwho+.prow{margin-top:16px}
+.prow>svg{font-size:20px;margin-top:1px;flex:none}
+.prow em{font-style:normal;color:var(--mute);font-weight:400;display:block;font-size:13px;margin-bottom:2px}
+.prow .tags{display:flex;flex-wrap:wrap;gap:6px}
+.prow .tags span{height:30px;padding:0 11px;border-radius:15px;background:rgba(11,11,11,.06);display:inline-flex;align-items:center;font-size:14px}
+.bit{opacity:0;transform:translateY(10px);filter:blur(4px);transition:opacity .35s var(--ease),transform .5s var(--ease),filter .35s var(--ease)}
+.bit.in{opacity:1;transform:none;filter:none}
+.pside{display:flex;flex-direction:column;gap:10px}
+.pgal{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1.7fr 1fr;gap:8px;flex:1;min-height:220px}
+.pgal i{border-radius:18px;background-size:cover;background-position:center}
+.pgal i:first-child{grid-column:span 3}
+.pconn{display:flex;flex-direction:column;gap:6px}
+.pconn div{height:46px;border-radius:15px;background:var(--ink2);display:flex;align-items:center;gap:10px;padding:0 14px;font-size:14.5px}
+.pconn svg{font-size:20px}
+.pconn .ok{margin-right:auto;color:var(--lime);font-size:17px}
+.pstamp{position:absolute;top:-16px;left:28px;height:40px;padding:0 16px;border-radius:20px;background:var(--lime);color:var(--ink);display:flex;align-items:center;gap:7px;font-size:15px;font-weight:700;box-shadow:0 0 0 4px var(--paper);opacity:0;transform:scale(.6) rotate(-8deg);transition:opacity .2s,transform .5s var(--spring)}
+.pstamp.in{opacity:1;transform:rotate(-4deg)}
+.cta{width:100%;max-width:820px;height:96px;margin-top:16px;border-radius:30px;background:var(--lime);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:16px;font-family:K;font-weight:700;font-size:56px;transition:transform .16s var(--ease)}
+.cta svg{font-size:36px}
+
+/* dock */
+.dock{flex:none;position:relative;display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 0 26px;width:100%;transition:opacity .35s var(--ease),transform .45s var(--ease)}
+.dock.hide{position:absolute;bottom:0;opacity:0;transform:translateY(30px);pointer-events:none}
+.pad{position:relative;width:420px;height:84px;border-radius:30px;background:var(--ink);color:var(--paper);display:flex;align-items:center;gap:16px;padding:0 12px 0 26px;overflow:hidden;touch-action:none;transition:transform .3s var(--spring)}
+.pad .mic{width:60px;height:60px;border-radius:21px;background:var(--lime);color:var(--ink);display:grid;place-items:center;font-size:28px;flex:none;transition:transform .3s var(--spring)}
+.pad .pl{font-size:18px;font-weight:600;white-space:nowrap;transition:opacity .2s;text-align:right}
+.pad .pl small{display:block;font-size:13px;font-weight:400;opacity:.62;margin-top:2px}
+.pad .wave{position:absolute;right:92px;left:84px;top:0;bottom:0;display:flex;align-items:center;gap:4px;opacity:0;transition:opacity .2s}
+.pad .wave i{flex:1;height:44px;max-width:5px;background:var(--lime);border-radius:3px;transform:scaleY(.12);transition:transform .12s ease-out}
+.pad .tm{position:absolute;left:24px;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;opacity:0;transition:opacity .2s;color:var(--lime)}
+body.listening .pad{transform:scale(1.04)}
+body.listening .pad .mic{transform:scale(1.08)}
+body.listening .pad .pl{opacity:0}
+body.listening .pad .wave,body.listening .pad .tm{opacity:1}
+.kbd{width:60px;height:60px;border-radius:50%;background:var(--card);box-shadow:inset 0 0 0 1px var(--hair);display:grid;place-items:center;font-size:24px;transition:opacity .25s,transform .3s var(--ease)}
+body.listening .kbd{opacity:0;transform:scale(.9)}
+.cancel{position:absolute;bottom:4px;font-size:12.5px;font-weight:500;color:rgba(11,11,11,.62);opacity:0;transition:opacity .2s}
+body.listening .cancel{opacity:1}
+
+.touch{position:fixed;left:0;top:0;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(11,11,11,.18);box-shadow:0 0 0 2px rgba(255,255,255,.85),0 4px 14px rgba(11,11,11,.18);z-index:50;pointer-events:none;opacity:0;transition:opacity .2s}
+.touch.on{opacity:1}
+.touch.down{background:rgba(11,11,11,.32)}
+
+/* ============ MOBILE ============ */
+@media (max-width:600px){
+  :root{--agent:84px;--line:60px}
+  .col{width:calc(100% - 32px)}
+  .top{padding-top:14px;height:64px;gap:8px}
+  .ibtn{width:44px;height:44px;font-size:18px}
+  .ribbon{height:44px;padding:0 5px}
+  .chip{height:32px;font-size:13px;padding:0 11px}
+  .skipb{height:44px;padding:0 14px;font-size:14px}
+  .presence{margin-top:14px}
+  .status{margin-top:10px;font-size:13px}
+  .line{margin-top:14px;max-width:100%}
+  .line.compact{--line:48px}
+  body.listening .line{font-size:76px;margin-top:40px}
+  body.tight{--agent:58px}
+  body.tight .line{margin-top:10px}
+  body.tight .answers{margin-top:16px}
+  .answers{margin-top:24px}
+  .field{gap:10px}
+  .field input{font-size:64px;height:70px}
+  .field.sm input{font-size:56px;height:64px}
+  .field.tel input{font-size:36px;height:60px}
+  .field.ig input{font-size:28px;height:58px}
+  .field.ig .pre{width:44px;height:44px;font-size:24px;border-radius:14px}
+  .fhint{font-size:14px;text-align:center}
+  .next{width:100%;height:66px;font-size:19px;margin-top:22px}
+  .types{grid-template-columns:1fr 1fr;grid-template-rows:150px 74px 74px;height:auto;gap:10px}
+  .tt.photo{grid-row:auto}
+  .tt.photo b{font-size:44px;padding:0 16px 14px}
+  .tt:not(.photo){flex-direction:row;align-items:center;justify-content:flex-start;gap:12px;padding:0 14px;border-radius:22px}
+  .tt .ic{width:44px;height:44px;border-radius:14px;font-size:23px}
+  .tt b{font-size:28px}
+  .tt:not(.photo) .tick{top:auto;left:12px;width:30px;height:30px;font-size:15px}
+  .other{margin-top:12px;font-size:14.5px}
+  .locbtn{height:76px;font-size:38px;border-radius:26px}
+  .grp+.grp{margin-top:20px}
+  .grp h3{font-size:14px;margin-bottom:10px}
+  .opts{gap:8px}
+  .opt{height:54px;padding:0 18px;font-size:17px;border-radius:18px}
+  .aud{grid-template-columns:1fr 1fr;gap:10px}
+  .at{height:auto;min-height:84px;flex-direction:row;align-items:center;justify-content:flex-start;gap:12px;padding:12px 14px;border-radius:22px}
+  .at .ic{width:44px;height:44px;border-radius:14px;font-size:23px}
+  .at b{font-size:31px}
+  .at span{font-size:13px;margin-top:2px}
+  .at.all{grid-column:span 2}
+  .at .tick{top:8px;left:8px;width:26px;height:26px;font-size:14px}
+  .at[aria-pressed="true"]{box-shadow:inset 0 0 0 2.5px var(--ink)}
+  .drop{height:220px;border-radius:26px}
+  .drop b{font-size:38px}
+  .drop.has{height:76px}
+  .drop.has b{font-size:30px}
+  .thumbs{gap:8px;flex-wrap:wrap}
+  .th{width:calc(25% - 6px);height:96px;border-radius:16px}
+  .fbbtn{height:78px;font-size:20px;border-radius:26px}
+  .fbbtn svg{font-size:30px}
+  .promise{padding:4px 16px;border-radius:22px}
+  .promise div{font-size:15.5px;min-height:56px}
+  .pcard{grid-template-columns:1fr;padding:10px;border-radius:30px;gap:10px}
+  .pside{order:-1;flex-direction:row}
+  .pgal{grid-template-columns:repeat(4,1fr);grid-template-rows:auto;gap:6px;min-height:0}
+  .pgal i,.pgal i:first-child{grid-column:auto;min-height:0;height:74px;border-radius:14px}
+  .pconn{display:none}
+  .pmain{padding:16px 18px;border-radius:22px}
+  .pwho .av{width:52px;height:52px;border-radius:16px}
+  .pwho b{font-size:44px}
+  .pwho+.prow{margin-top:12px}
+  .prow{padding:10px 0;font-size:14.5px}
+  .prow .tags span{height:28px;font-size:13px}
+  .pstamp{top:-14px;left:18px;height:36px;font-size:14px}
+  .cta{height:80px;font-size:33px;white-space:nowrap;gap:12px;border-radius:26px;margin-top:12px}
+  .cta svg{font-size:28px}
+  body.roomy{--agent:104px;--line:70px}
+  body.roomy .presence{margin-top:22px}
+  body.roomy .answers{margin-top:34px}
+  .dock{padding:10px 0 22px}
+  .pad{width:auto;flex:1;height:76px;border-radius:28px}
+  .pad .mic{width:54px;height:54px;border-radius:19px}
+  .pad .pl{font-size:17px}
+  .pad .wave{right:80px;left:70px}
+  .kbd{width:56px;height:56px}
+}
+@media (max-height:760px) and (max-width:600px){:root{--agent:64px;--line:52px}}
+@media (prefers-reduced-motion:reduce){
+  *,*:before,*:after{animation-duration:.01ms !important;animation-iteration-count:1 !important}
+  .line .w,.bit{filter:none;transform:none}
+  .pop,.pcard,.th,.chip,.agent .ag,.dock{transition-duration:.15s !important}
+}
+</style>
+</head>
+<body>
+<div class="tint"></div>
+<main class="stage">
+  <div class="col" id="col">
+    <header class="top">
+      <button class="ibtn" id="back" aria-label="חזרה לשאלה הקודמת" disabled data-i="arrow-right"></button>
+      <nav class="ribbon" aria-label="התשובות שלך. אפשר ללחוץ על תשובה כדי לשנות אותה">
+        <div class="rb-track" id="rbTrack"><span class="rb-empty" id="rbEmpty">התשובות שלך יופיעו כאן</span></div>
+      </nav>
+      <button class="skipb" id="skip" hidden>אחר כך</button>
+    </header>
+
+    <section class="presence" aria-hidden="true">
+      <div class="agent" id="agent">
+        <svg class="ag" viewBox="0 0 100 100">
+          <g class="ag-body">
+            <rect class="leg" x="14" y="52" width="16" height="36" rx="8"/>
+            <path class="bub" d="M29 14H64A22 22 0 0 1 86 36V48A22 22 0 0 1 64 70H58A6 6 0 0 1 52 64V44H29A15 15 0 0 1 29 14Z"/>
+            <g class="eye e1"><ellipse class="sclera" cx="58" cy="29" rx="6.2" ry="7.6"/><circle class="pupil" cx="57.4" cy="30" r="3.4"/></g>
+            <g class="eye e2"><ellipse class="sclera" cx="75" cy="29" rx="6.2" ry="7.6"/><circle class="pupil" cx="74.4" cy="30" r="3.4"/></g>
+            <path class="heyes" d="M52.6 31.5Q58 24 63.4 31.5M69.6 31.5Q75 24 80.4 31.5"/>
+            <path class="mouth m-smile" d="M61.5 51.5Q68.5 57.5 76 51.5"/>
+            <path class="mouth m-flat" d="M63 54H74.5"/>
+            <ellipse class="mouth m-o" cx="68.6" cy="54.2" rx="3.2" ry="3.8"/>
+            <path class="mouth m-big" d="M60 50.5Q68.5 63 77.5 50.5Z"/>
+          </g>
+          <path class="arm" d="M84 50Q96 44 98 30"/>
+        </svg>
+        <div class="shadow"></div>
+        <div class="burst" id="burst"></div>
+      </div>
+    </section>
+    <div class="status" id="status" aria-live="polite"></div>
+
+    <h1 class="line" id="line" aria-live="polite"></h1>
+
+    <section class="answers" id="answers"></section>
+
+    <footer class="dock" id="dock">
+      <button class="pad" id="pad" aria-label="להחזיק ולדבר. אפשר לענות בקול על כל שאלה">
+        <span class="mic" data-i="microphone"></span>
+        <span class="pl">להחזיק ולדבר<small>אפשר לענות בקול על הכל</small></span>
+        <span class="wave" id="wave"></span>
+        <span class="tm" id="tm">0:00</span>
+      </button>
+      <button class="kbd" id="kbd" aria-label="לכתוב במקלדת" data-i="keyboard"></button>
+      <span class="cancel">משחררים כדי לשלוח</span>
+    </footer>
+  </div>
+</main>
+<div class="touch" id="touch"></div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const Q=new URLSearchParams(location.search),MANUAL=Q.has('manual'),PAUSE=Q.get('pause');let PAUSED=false;
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const wait=ms=>new Promise(r=>setTimeout(()=>{if(!PAUSED)r()},ms));
+const ic=n=>`<svg class="i" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${ICONS[n]||''}</svg>`;
+const h=html=>{const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstElementChild};
+const hydrate=(root=document)=>root.querySelectorAll('[data-i]').forEach(el=>{if(!el.dataset.done){el.insertAdjacentHTML('afterbegin',ic(el.dataset.i));el.dataset.done=1}});
+hydrate();
+const mark=m=>{window.__mark=m;document.documentElement.dataset.mark=m;if(PAUSE&&m===PAUSE)setTimeout(()=>{PAUSED=true},+(Q.get('delay')||0))};
+const agent=$('#agent'),line=$('#line'),answers=$('#answers'),status=$('#status'),track=$('#rbTrack'),touch=$('#touch');
+const mobile=()=>innerWidth<=600;
+const wave=$('#wave');for(let i=0;i<34;i++)wave.appendChild(document.createElement('i'));
+
+function face(s){agent.className='agent '+(s||'')}
+async function react(s,ms=900){face(s);await wait(ms);if(agent.classList.contains(s))face('')}
+function look(el){if(!el){agent.style.removeProperty('--lx');agent.style.removeProperty('--ly');return}
+  const a=agent.getBoundingClientRect(),r=el.getBoundingClientRect(),dx=r.left+r.width/2-(a.left+a.width/2),dy=r.top+r.height/2-(a.top+a.height/2),d=Math.hypot(dx,dy)||1;
+  agent.style.setProperty('--lx',(dx/d*1.6).toFixed(2)+'px');agent.style.setProperty('--ly',(dy/d*1.6).toFixed(2)+'px')}
+function burst(){const b=$('#burst');b.innerHTML='';for(let i=0;i<10;i++){const a=i/10*Math.PI*2+.3,r=70+(i%3)*18;const d=h(`<i style="--x:${Math.cos(a)*r}px;--y:${Math.sin(a)*r*.8}px;animation-delay:${(i%4)*25}ms"></i>`);b.appendChild(d)}
+  b.classList.remove('go');void b.offsetWidth;b.classList.add('go')}
+
+/* progress */
+let total=10;
+function setStatus(html){status.innerHTML=html}
+function progress(i){
+  const left=total-i;
+  const dots=Array.from({length:total},(_,k)=>`<i class="${k<i?'done':k===i?'now':''}"></i>`).join('');
+  const txt=left<=1?'שאלה אחרונה':`עוד ${left} שאלות`;
+  setStatus(`<span class="prog"><span class="dots" aria-hidden="true">${dots}</span><span>${txt}</span></span>`);
+}
+function thinking(t){setStatus(`<span class="lv" aria-hidden="true"><i></i><i></i><i></i></span>${t}`)}
+
+/* line */
+async function say(html,{compact=false,speed=55}={}){
+  line.classList.add('out');await wait(200);
+  line.classList.toggle('compact',compact);
+  const tmp=document.createElement('div');tmp.innerHTML=html;line.innerHTML='';const words=[];
+  const walk=(node,parent)=>{node.childNodes.forEach(n=>{
+    if(n.nodeType===3){n.textContent.split(/(\s+)/).forEach(p=>{if(!p)return;if(/^\s+$/.test(p)){parent.appendChild(document.createTextNode(' '));return}
+      const s=document.createElement('span');s.className='w';s.textContent=p;parent.appendChild(s);words.push(s)})}
+    else{const c=n.cloneNode(false);parent.appendChild(c);walk(n,c)}})};
+  walk(tmp,line);line.classList.remove('out');
+  const keep=agent.className.match(/wave|happy/);if(!keep)face('talk');
+  for(const w of words){w.classList.add('in');await wait(RM?0:speed)}
+  await wait(260);if(!keep)face('');
+}
+
+/* ribbon chips: answers, tap to edit */
+const chips={};
+function setChip(id,text,{skip=false,from=null}={}){
+  $('#rbEmpty').style.display='none';
+  let c=chips[id];
+  const label=skip?'דילגתי':text;
+  if(!c){c=h(`<button class="chip" data-step="${id}"></button>`);track.appendChild(c);chips[id]=c;c.addEventListener('click',()=>jumpTo(id))}
+  c.classList.toggle('skip',skip);c.innerHTML=`<span><bdi>${label}</bdi></span>${ic('pencil-simple')}`;
+  c.setAttribute('aria-label',`${STEPS.find(s=>s.id===id).title}: ${label}. לשנות`);
+  track.scrollLeft=-9999;track.classList.toggle('over',track.scrollWidth>track.clientWidth+2);
+  if(from&&!RM)return flyChip(from,c);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>c.classList.add('in')));
+}
+async function flyChip(fromEl,c){
+  c.classList.remove('in');c.style.opacity=0;await wait(30);
+  const a=fromEl.getBoundingClientRect(),b=c.getBoundingClientRect();
+  const g=h(`<div style="position:fixed;z-index:30;left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px;pointer-events:none"></div>`);
+  const cl=fromEl.cloneNode(true);cl.style.margin=0;g.appendChild(cl);document.body.appendChild(g);
+  const an=g.animate([{transform:'none',opacity:1},{transform:`translate(${b.left-a.left}px,${b.top-a.top}px) scale(${b.width/a.width},${b.height/a.height})`,opacity:0}],{duration:560,easing:'cubic-bezier(.77,0,.175,1)',fill:'forwards'});
+  await wait(330);c.style.opacity='';c.classList.add('in');await an.finished;g.remove();
+}
+function markCur(id){Object.values(chips).forEach(c=>c.classList.toggle('cur',c.dataset.step===id))}
+
+/* touch indicator for autoplay */
+let tx=innerWidth/2,ty=innerHeight-60;
+async function moveTo(el,dur=560,dx=0,dy=0){const r=el.getBoundingClientRect();const x=r.left+r.width/2+dx,y=r.top+r.height/2+dy;touch.classList.add('on');
+  await touch.animate([{transform:`translate(${tx}px,${ty}px)`},{transform:`translate(${x}px,${y}px)`}],{duration:dur,easing:'cubic-bezier(.65,0,.35,1)',fill:'forwards'}).finished;tx=x;ty=y}
+async function tap(el,{hold=150}={}){look(el);await moveTo(el);touch.classList.add('down');el.classList.add('press');await wait(hold);touch.classList.remove('down');el.classList.remove('press');el.click();await wait(80)}
+const hideTouch=()=>{touch.classList.remove('on');look(null)};
+async function typeInto(input,text,speed=110){await tap(input);for(const ch of text){input.value+=ch;input.dispatchEvent(new Event('input',{bubbles:true}));await wait(speed+Math.random()*50)}}
+
+async function clear(){const m=answers.querySelector('.mom');if(!m)return;m.querySelectorAll('.pop').forEach(p=>p.classList.add('leave'));await wait(260);m.remove()}
+function mount(html){const m=h(`<div class="mom">${html}</div>`);hydrate(m);answers.appendChild(m);
+  [...m.querySelectorAll('.pop')].forEach((p,i)=>setTimeout(()=>p.classList.add('in'),60+i*70));return m}
+
+/* ---------- data ---------- */
+const A={};               // answers
+const PH={nails:'img/nails1.jpg',food:'img/falafel1.jpg'};
+const TYPES=[
+  {k:'nails',t:'ציפורניים',photo:'img/nails1.jpg',pos:'center 62%'},
+  {k:'food',t:'אוכל',photo:'img/falafel1.jpg',pos:'center'},
+  {k:'hair',t:'יופי ושיער',i:'scissors'},
+  {k:'fit',t:'כושר',i:'barbell'},
+  {k:'clinic',t:'קליניקה',i:'first-aid'},
+  {k:'shop',t:'חנות',i:'storefront'},
+];
+const SERVICES={nails:['לק ג׳ל','בניית ציפורניים','מניקור','פדיקור'],food:['ארוחות','משלוחים','קייטרינג','מגשי אירוח'],hair:['תספורת','צבע','החלקה','איפור'],fit:['אימון אישי','קבוצות','פילאטיס','יוגה'],clinic:['טיפול','ייעוץ','בדיקה','מנוי'],shop:['בגדים','מתנות','לבית','אונליין'],other:['שירות','מוצר','סדנה','ייעוץ']};
+const PRICES=['עד \u2066₪100\u2069','\u2066₪100–200\u2069','\u2066₪200–400\u2069','\u2066₪400\u2069 ומעלה'];
+const AUD=[
+  {k:'y',t:'צעירות',s:'גילאי \u206618–30\u2069',i:'sparkle'},
+  {k:'w',t:'נשים',s:'גילאי \u206630–50\u2069',i:'flower-lotus'},
+  {k:'m',t:'אמהות',s:'עם ילדים קטנים',i:'baby'},
+  {k:'st',t:'סטודנטיות',s:'תקציב קטן',i:'student'},
+  {k:'all',t:'כולם',s:'כל מי שבסביבה',i:'users-three'},
+];
+const PHOTOS=['img/nails4.jpg','img/nails2.jpg','img/nails3.jpg','img/nails1.jpg'];
+
+/* ---------- steps ---------- */
+// each: id, title (for aria), q(), opt?, view(), bind(mom, done) ; done(value,label,fromEl)
+const STEPS=[
+ {id:'name',title:'שם',mark:'hello',q:()=> 'היי, <em>מה שמך?</em>',
+  view:()=>`<label class="sr" for="in-name">השם שלך</label>
+   <div class="field pop"><input id="in-name" autocomplete="given-name" placeholder="השם שלך" value="${A.name||''}" enterkeyhint="next"></div>
+   <div class="fhint pop">${ic('microphone')}אפשר גם להחזיק את הכפתור למטה ולהגיד</div>
+   <button class="next pop" id="go" ${A.name?'':'disabled'}>נמשיך${ic('arrow-left')}</button>`,
+  bind:(m,done)=>textBind(m,'#in-name',v=>done(v,v,m.querySelector('input'))),
+  voice:'דין'},
+ {id:'type',title:'סוג העסק',mark:'type',tight:true,q:()=> `ספר לי, <em>מה העסק שלך?</em>`,
+  view:()=>`<div class="types pop" role="group" aria-label="סוג העסק">${TYPES.map(t=>t.photo
+     ?`<button class="tt photo" data-k="${t.k}" aria-pressed="${A.type===t.k}"><span class="tick">${ic('check')}</span><span class="ph" style="background-image:url(${t.photo});background-position:${t.pos}"></span><b>${t.t}</b></button>`
+     :`<button class="tt" data-k="${t.k}" aria-pressed="${A.type===t.k}"><span class="tick">${ic('check')}</span><span class="ic">${ic(t.i)}</span><b>${t.t}</b></button>`).join('')}</div>
+   <div class="other pop">משהו אחר? <button id="oth">לכתוב בעצמי</button> או פשוט להגיד</div>`,
+  bind:(m,done)=>{m.querySelectorAll('.tt').forEach(b=>b.onclick=()=>{m.querySelectorAll('.tt').forEach(x=>x.setAttribute('aria-pressed',x===b));m.querySelector('.types').classList.add('decided');
+     const t=TYPES.find(x=>x.k===b.dataset.k);done(t.k,t.t,b.querySelector('b'))});
+     m.querySelector('#oth').onclick=()=>{const v=prompt('איזה עסק?');if(v)done('other',v)}},
+  voice:'nails'},
+ {id:'biz',title:'שם העסק',mark:'biz',q:()=> 'איך קוראים <em>לעסק?</em>',
+  view:()=>`<label class="sr" for="in-biz">שם העסק</label>
+   <div class="field pop"><input id="in-biz" autocomplete="organization" placeholder="שם העסק" value="${A.biz||''}"></div>
+   <div class="fhint pop">כמו שזה כתוב על השלט או באינסטגרם</div>
+   <button class="next pop" id="go" ${A.biz?'':'disabled'}>נמשיך${ic('arrow-left')}</button>`,
+  bind:(m,done)=>textBind(m,'#in-biz',v=>done(v,v,m.querySelector('input'))),voice:'סטודיו דין'},
+ {id:'city',title:'איפה',mark:'where',q:()=> 'איפה <em>העסק?</em>',
+  view:()=>`<button class="locbtn pop" id="loc">${ic('crosshair')}להשתמש במיקום שלי</button>
+   <div class="or pop">או לכתוב עיר</div>
+   <label class="sr" for="in-city">עיר</label>
+   <div class="field sm pop"><input id="in-city" autocomplete="address-level2" placeholder="עיר" value="${A.city||''}"></div>
+   <div class="found" id="found">${ic('map-pin')}<span>נהריה והסביבה, עד 10 ק״מ</span></div>
+   <button class="next pop" id="go" ${A.city?'':'disabled'}>נמשיך${ic('arrow-left')}</button>`,
+  bind:(m,done)=>{textBind(m,'#in-city',v=>done(v,v,m.querySelector('input')));
+     const lb=m.querySelector('#loc');lb.onclick=async()=>{lb.classList.add('busy');face('think');thinking('מחפש איפה אתה');await wait(1000);lb.classList.remove('busy');
+       const i=m.querySelector('#in-city');i.value='נהריה';i.dispatchEvent(new Event('input'));m.querySelector('#found').classList.add('in');react('nod');progress(idx)}},
+  voice:'נהריה'},
+ {id:'sell',title:'מה מוכרים',mark:'sell',tight:true,q:()=> 'מה אתה מוכר, <em>ובכמה?</em>',compact:true,
+  view:()=>{const sv=SERVICES[A.type]||SERVICES.other;const cur=A.sell||{s:[],p:''};
+   return `<div class="grp pop"><h3 id="g1">מה עושים אצלך? אפשר כמה</h3><div class="opts" role="group" aria-labelledby="g1">${sv.map(s=>`<button class="opt sv" aria-pressed="${cur.s.includes(s)}">${ic('check')}${s}</button>`).join('')}<button class="opt add">${ic('plus')}עוד</button></div></div>
+   <div class="grp pop"><h3 id="g2">כמה זה עולה בערך?</h3><div class="opts" role="radiogroup" aria-labelledby="g2">${PRICES.map(p=>`<button class="opt pr" role="radio" aria-checked="${cur.p===p}" aria-pressed="${cur.p===p}">${ic('check')}${p}</button>`).join('')}</div></div>
+   <button class="next pop" id="go" ${cur.s.length&&cur.p?'':'disabled'}>נמשיך${ic('arrow-left')}</button>`},
+  bind:(m,done)=>{const go=m.querySelector('#go');const st=()=>{const s=[...m.querySelectorAll('.sv[aria-pressed="true"]')].map(b=>b.textContent),p=m.querySelector('.pr[aria-pressed="true"]')?.textContent||'';go.disabled=!(s.length&&p);return{s,p}};
+     m.querySelectorAll('.sv').forEach(b=>b.onclick=()=>{b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true');st()});
+     m.querySelectorAll('.pr').forEach(b=>b.onclick=()=>{m.querySelectorAll('.pr').forEach(x=>{x.setAttribute('aria-pressed',x===b);x.setAttribute('aria-checked',x===b)});st()});
+     m.querySelector('.add').onclick=()=>{const v=prompt('מה עוד?');if(v){const b=h(`<button class="opt sv" aria-pressed="true">${ic('check')}${v}</button>`);b.onclick=()=>{b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true');st()};m.querySelector('.add').before(b);st()}};
+     go.onclick=()=>{const v=st();done(v,`${v.s[0]}${v.s.length>1?' +'+(v.s.length-1):''} · ${v.p}`,m.querySelector('.pr[aria-pressed="true"]'))}},
+  voice:{s:['לק ג׳ל','בניית ציפורניים'],p:'₪100–200'}},
+ {id:'who',title:'לקוחות',mark:'who',tight:true,q:()=> 'מי הלקוחות <em>שלך?</em>',
+  view:()=>{const cur=A.who||[];return `<div class="aud pop" role="group" aria-label="מי הלקוחות, אפשר לבחור כמה">${AUD.map(a=>`<button class="at ${a.k==='all'?'all':''}" data-k="${a.k}" aria-pressed="${cur.includes(a.k)}"><span class="tick">${ic('check')}</span><span class="ic">${ic(a.i)}</span><div><b>${a.t}</b><span>${a.s}</span></div></button>`).join('')}</div>
+   <button class="next pop" id="go" ${cur.length?'':'disabled'}>נמשיך${ic('arrow-left')}</button>`},
+  bind:(m,done)=>{const go=m.querySelector('#go');const sel=()=>[...m.querySelectorAll('.at[aria-pressed="true"]')].map(b=>b.dataset.k);
+     m.querySelectorAll('.at').forEach(b=>b.onclick=()=>{const on=b.getAttribute('aria-pressed')!=='true';
+       if(b.dataset.k==='all'&&on)m.querySelectorAll('.at').forEach(x=>x.setAttribute('aria-pressed','false'));else if(on)m.querySelector('.at.all').setAttribute('aria-pressed','false');
+       b.setAttribute('aria-pressed',on);go.disabled=!sel().length});
+     go.onclick=()=>{const v=sel();done(v,v.map(k=>AUD.find(a=>a.k===k).t).join(' + '),m.querySelector('.at[aria-pressed="true"] b'))}},
+  voice:['y','w']},
+ {id:'social',title:'אינסטגרם',mark:'social',opt:true,q:()=> 'יש לעסק אינסטגרם <em>או פייסבוק?</em>',compact:true,
+  view:()=>`<label class="sr" for="in-ig">קישור או שם משתמש</label>
+   <div class="field ig pop"><span class="pre">${ic('instagram-logo')}</span><input id="in-ig" placeholder="@שם_העמוד" value="${A.social||''}" inputmode="url" autocomplete="url"></div>
+   <div class="fhint pop">אני אציץ בעמוד כדי ללמוד את הסגנון שלך</div>
+   <button class="next pop" id="go" ${A.social?'':'disabled'}>נמשיך${ic('arrow-left')}</button>
+   <button class="ghost pop" id="none">אין לי עדיין</button>`,
+  bind:(m,done)=>{textBind(m,'#in-ig',v=>done(v,v,m.querySelector('input')));m.querySelector('#none').onclick=()=>done(null,'אין עדיין')},
+  voice:'@studio.deen'},
+ {id:'photos',title:'תמונות',mark:'photos',opt:true,tight:true,q:()=> 'תראה לי <em>כמה עבודות.</em>',
+  view:()=>`<label class="drop pop ${A.photos?'has':''}" id="drop"><span class="ic">${ic('image')}</span><b>${A.photos?'להוסיף עוד':'לבחור תמונות'}</b><span>מהגלריה בטלפון. ${mobile()?'':'או לגרור לכאן. '}3–5 מספיקות</span>
+     <input type="file" accept="image/*" multiple aria-label="לבחור תמונות של העבודות"></label>
+   <div class="thumbs" id="thumbs"></div>
+   <button class="next pop" id="go" ${A.photos?'':'disabled'}>נמשיך${ic('arrow-left')}</button>`,
+  bind:(m,done)=>{const go=m.querySelector('#go'),th=m.querySelector('#thumbs'),dz=m.querySelector('#drop');let list=A.photos?[...A.photos]:[];
+     const show=async(urls)=>{dz.classList.add('has');dz.querySelector('b').textContent='להוסיף עוד';
+       for(const [i,u] of urls.entries()){if(th.children.length>=4)break;const t=h(`<div class="th" style="background-image:url(${u});--r:${[-3,2,-1.5,3][i%4]}deg" role="img" aria-label="תמונה ${th.children.length+1}"><span class="tick">${ic('check')}</span></div>`);th.appendChild(t);
+         requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('in')));await wait(RM?0:160)}
+       go.disabled=false};
+     if(list.length)show(list);
+     m.__add=async urls=>{list=list.concat(urls);await show(urls)};
+     dz.querySelector('input').onchange=e=>{const u=[...e.target.files].map(f=>URL.createObjectURL(f));m.__add(u)};
+     dz.ondragover=e=>{e.preventDefault();dz.style.borderColor='var(--ink)'};dz.ondragleave=()=>dz.style.borderColor='';
+     dz.ondrop=e=>{e.preventDefault();dz.style.borderColor='';m.__add([...e.dataTransfer.files].filter(f=>f.type.startsWith('image')).map(f=>URL.createObjectURL(f)))};
+     go.onclick=()=>done(list,`${list.length} תמונות`,th.firstElementChild||dz.querySelector('b'))},
+  voice:null},
+ {id:'fb',title:'פייסבוק',mark:'facebook',opt:true,q:()=> 'נחבר את <em>הפייסבוק?</em>',
+  view:()=>`<div class="fbcard pop"><button class="fbbtn" id="fbb"><span class="bar"></span><span class="l1">${ic('facebook-logo')}להתחבר עם פייסבוק</span><span class="l2">${ic('check')}מחובר · ${A.biz||'העסק שלך'}</span></button>
+     <div class="promise">
+       <div><span class="k">${ic('lock-simple')}</span>אנחנו לא נפרסם כלום בלי אישור שלך</div>
+       <div><span class="k">${ic('shield-check')}</span>לא נוגעים בהודעות או בפוסטים הפרטיים</div>
+       <div><span class="k">${ic('x')}</span>אפשר לנתק בלחיצה, מתי שרוצים</div>
+     </div></div>`,
+  bind:(m,done)=>{const b=m.querySelector('#fbb');b.onclick=async()=>{if(b.classList.contains('done'))return;b.classList.add('busy');face('think');thinking('מתחבר לפייסבוק');await wait(1300);b.classList.add('done');b.setAttribute('aria-label','מחובר לפייסבוק');mark('fb-done');react('happy',1400);setStatus('מחובר. גם האינסטגרם');await wait(1300);done(true,'פייסבוק מחובר',b.querySelector('.l2'))}},
+  voice:null},
+ {id:'phone',title:'וואטסאפ',mark:'phone',q:()=> 'לאן לשלוח לך <em>לקוחות?</em>',
+  view:()=>`<label class="sr" for="in-ph">מספר וואטסאפ</label>
+   <div class="field tel pop"><span class="pre">${ic('whatsapp-logo')}</span><input id="in-ph" type="tel" inputmode="tel" autocomplete="tel" placeholder="050-000-0000" value="${A.phone||''}"></div>
+   <div class="fhint pop">כל פנייה מהמודעות תגיע אליך לוואטסאפ, עם תשובה מוכנה</div>
+   <button class="next pop" id="go" ${A.phone?'':'disabled'}>סיימנו${ic('arrow-left')}</button>`,
+  bind:(m,done)=>textBind(m,'#in-ph',v=>done(v,v,m.querySelector('input')),v=>v.replace(/\D/g,'').length>=9),
+  voice:'052-123-4567'},
+];
+total=STEPS.length;
+
+function textBind(m,sel,onDone,valid=v=>v.trim().length>0){
+  const i=m.querySelector(sel),go=m.querySelector('#go');
+  const upd=()=>go.disabled=!valid(i.value);i.addEventListener('input',upd);upd();
+  i.addEventListener('keydown',e=>{if(e.key==='Enter'&&valid(i.value))go.click()});
+  go.onclick=()=>onDone(i.value.trim());
+}
+
+/* ---------- engine ---------- */
+let idx=0,furthest=0,pending=null,ended=false;
+function jumpTo(id){const i=STEPS.findIndex(s=>s.id===id);if(i<0||!pending)return;pending({jump:i})}
+$('#back').onclick=()=>{if(pending&&idx>0)pending({jump:idx-1})};
+$('#skip').onclick=()=>{if(pending)pending({skip:true})};
+$('#kbd').onclick=()=>{const i=answers.querySelector('input:not([type=file])');if(i)i.focus()};
+
+const REACT={name:null,type:['nod','מגניב!'],biz:['happy','שם יפה'],city:['nod','מכיר, עיר יפה'],sell:['nod','רשמתי'],who:['nod','הבנתי מי מחפשים'],social:['happy','מעולה'],photos:['happy','וואו, עבודות יפות'],fb:null,phone:['nod','מצוין']};
+
+async function runStep(i){
+  const s=STEPS[i];idx=i;
+  $('#back').disabled=i===0;$('#skip').hidden=!s.opt;
+  document.body.classList.toggle('tight',!!s.tight&&(mobile()||s.tightDesk));
+  document.body.classList.toggle('roomy',!s.tight&&!s.compact&&s.id!=='city');
+  markCur(s.id);progress(i);
+  await say(s.q(),{compact:!!s.compact});
+  const m=mount(s.view());
+  const res=await new Promise(r=>{pending=r;s.bind(m,(value,label,from)=>r({value,label,from}))});
+  pending=null;return res;
+}
+
+async function flow(){
+  while(idx<STEPS.length){
+    const s=STEPS[idx];const r=await runStep(idx);
+    if(r.jump!=null){await clear();idx=r.jump;continue}
+    if(r.skip){A[s.id]=null;setChip(s.id,'',{skip:true});}
+    else{A[s.id]=r.value;setChip(s.id,r.label,{from:r.from});}
+    window.__answered=s.id;
+    // reactions
+    if(s.id==='name'){await clear();await wait(250);face('wave');setStatus('');await say(`היי ${A.name}! <em>אני הקמפיינר, נעים מאוד.</em>`,{speed:60});await wait(900);face('');}
+    else if(!r.skip&&REACT[s.id]){const [f,t]=REACT[s.id];setStatus(`<span>${t}</span>`);face(f);await wait(f==='happy'?900:650);face('');await clear();}
+    else await clear();
+    furthest=Math.max(furthest,idx+1);
+    idx=(idx+1<furthest)?furthest:idx+1;   // after an edit, return to where we were
+    if(idx>=STEPS.length)break;
+  }
+  pending=null;await finale();
+}
+
+/* ---------- finale ---------- */
+async function finale(){
+  markCur(null);document.body.classList.remove('roomy');$('#skip').hidden=true;$('#back').disabled=true;
+  document.body.classList.add('tight');$('#dock').classList.add('hide');
+  face('think');thinking('בונה לך פרופיל');
+  await say('רגע, <em>בונה לך פרופיל…</em>',{compact:true,speed:45});face('think');
+  const t=TYPES.find(x=>x.k===A.type)?.t||A.type||'';
+  const aud=(A.who||[]).map(k=>AUD.find(a=>a.k===k)?.t+' · '+AUD.find(a=>a.k===k)?.s.replace('גילאי ',''));
+  const ph=(A.photos&&A.photos.length?A.photos:[PH[A.type]||'img/nails1.jpg']).slice(0,4);
+  while(ph.length<3)ph.push(ph[0]);
+  const sell=A.sell||{s:[],p:''};
+  const m=mount(`<div class="pcard" id="pcard" role="region" aria-label="הפרופיל של העסק">
+    <span class="pstamp" id="stamp">${ic('check')}הפרופיל מוכן</span>
+    <div class="pmain">
+      <div class="pwho bit"><span class="av" role="img" aria-label="תמונת העסק"></span><div><b>${A.biz||'העסק שלי'}</b><small>${ic('map-pin')}${t} · ${A.city||''}</small></div></div>
+      <div class="prow bit">${ic('tag')}<div><em>מה מוכרים</em>${sell.s.join(', ')} · ${sell.p}</div></div>
+      <div class="prow bit">${ic('users')}<div><em>למי מפרסמים</em><span class="tags">${aud.map(a=>`<span>${a}</span>`).join('')}</span></div></div>
+      <div class="prow bit">${ic('whatsapp-logo')}<div><em>פניות יגיעו אל</em><span dir="ltr">${A.phone||'—'}</span></div></div>
+    </div>
+    <div class="pside">
+      <div class="pgal bit">${ph.map(u=>`<i style="background-image:url(${u})"></i>`).join('')}</div>
+      <div class="pconn">
+        <div class="bit">${ic('facebook-logo')}פייסבוק<span class="ok">${A.fb?ic('check'):''}</span></div>
+        <div class="bit">${ic('instagram-logo')}<bdi>${A.social||'אינסטגרם'}</bdi><span class="ok">${A.social?ic('check'):''}</span></div>
+      </div>
+    </div>
+  </div>
+  <button class="cta pop" id="cta" style="transition-delay:0s">בוא נעשה את הקמפיין הראשון${ic('arrow-left')}</button>`);
+  const pc=$('#pcard'),cta=$('#cta');cta.classList.remove('in');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>pc.classList.add('in')));
+  await wait(500);mark('build');
+  for(const b of pc.querySelectorAll('.bit')){b.classList.add('in');await wait(RM?0:300)}
+  await wait(300);
+  $('#stamp').classList.add('in');face('happy');burst();setStatus('<span>הכל מוכן</span>');
+  await say(`זה העסק שלך, <em>${A.name||''}.</em>`,{compact:true});
+  cta.classList.add('in');
+  cta.onclick=()=>{location.href='index.html'};
+  await wait(900);mark('finale');
+  if(MANUAL)cta.focus({preventScroll:true});
+}
+
+/* ---------- hold to talk ---------- */
+let listenIv=null,t0=0;
+function startListen(){document.body.classList.add('listening');face('listen');t0=performance.now();
+  const bars=[...wave.children];listenIv=setInterval(()=>{bars.forEach((b,i)=>b.style.transform=`scaleY(${(.15+Math.random()*.85*(0.5+0.5*Math.sin(i*.6+performance.now()/180))).toFixed(2)})`);
+    $('#tm').textContent='0:0'+Math.floor((performance.now()-t0)/1000)},90)}
+function stopListen(){clearInterval(listenIv);[...wave.children].forEach(b=>b.style.transform='');document.body.classList.remove('listening');face('')}
+// manual: hold the pad to answer the current question by voice (prototype fills a demo answer)
+const pad=$('#pad');
+if(MANUAL){
+  let saved='';
+  pad.addEventListener('pointerdown',e=>{e.preventDefault();saved=line.innerHTML;startListen();line.innerHTML='<span class="caret"></span>'});
+  const up=()=>{if(!document.body.classList.contains('listening'))return;stopListen();line.innerHTML=saved;applyVoice()};
+  pad.addEventListener('pointerup',up);pad.addEventListener('pointerleave',up);
+  pad.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();saved=line.innerHTML;startListen()}});
+  pad.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter')up()});
+}
+function applyVoice(){
+  const s=STEPS[idx],v=s.voice,m=answers.querySelector('.mom');if(!m||v==null)return;
+  if(typeof v==='string'&&m.querySelector('input:not([type=file])')){const i=m.querySelector('input:not([type=file])');i.value=v;i.dispatchEvent(new Event('input'))}
+  else if(s.id==='type')m.querySelector(`.tt[data-k="${v}"]`)?.click();
+  else if(s.id==='who'){v.forEach(k=>{const b=m.querySelector(`.at[data-k="${k}"]`);if(b&&b.getAttribute('aria-pressed')!=='true')b.click()})}
+  else if(s.id==='sell'){m.querySelectorAll('.sv').forEach(b=>{if(v.s.includes(b.textContent)&&b.getAttribute('aria-pressed')!=='true')b.click()});[...m.querySelectorAll('.pr')].find(b=>b.textContent===v.p)?.click()}
+}
+async function holdToTalk(words){
+  await moveTo(pad,640);touch.classList.add('down');
+  const saved=line.innerHTML;startListen();
+  line.classList.add('out');await wait(160);line.classList.remove('compact');line.innerHTML='<span class="caret"></span>';line.classList.remove('out');
+  await wait(450);
+  for(let i=0;i<words.length;i++){const s=document.createElement('span');s.className='w';s.textContent=words[i];const c=line.querySelector('.caret');
+    line.insertBefore(s,c);line.insertBefore(document.createTextNode(' '),c);requestAnimationFrame(()=>s.classList.add('in'));if(i===2)mark('listen');await wait(330)}
+  await wait(800);touch.classList.remove('down');stopListen();
+  line.classList.add('out');await wait(200);line.classList.add('compact');line.innerHTML=saved;line.querySelectorAll('.w').forEach(w=>w.classList.add('in'));line.classList.remove('out');
+  applyVoice();
+}
+
+/* ---------- autoplay script ---------- */
+const until=id=>new Promise(r=>{const f=()=>{const m=answers.querySelector('.mom');if(STEPS[idx].id===id&&pending&&m&&m.querySelector('.pop.in'))r(m);else setTimeout(f,60)};f()});
+async function script(){
+  let m;
+  // name
+  m=await until('name');await wait(700);mark('hello');await wait(600);
+  await typeInto(m.querySelector('input'),'דין',180);await wait(500);mark('hello-typed');await wait(300);
+  await tap(m.querySelector('#go'));hideTouch();
+  // type
+  m=await until('type');await wait(900);mark('type');await wait(700);
+  await tap(m.querySelector('.tt[data-k="nails"]'));hideTouch();
+  // biz name
+  m=await until('biz');await wait(600);mark('biz');
+  await typeInto(m.querySelector('input'),'סטודיו דין',95);await wait(400);await tap(m.querySelector('#go'));hideTouch();
+  // where
+  m=await until('city');await wait(700);mark('where');await wait(400);
+  await tap(m.querySelector('#loc'));await wait(1500);mark('where-found');await wait(400);await tap(m.querySelector('#go'));hideTouch();
+  // sell
+  m=await until('sell');await wait(700);mark('sell');
+  const sv=[...m.querySelectorAll('.sv')];await tap(sv[0]);await tap(sv[1]);await tap([...m.querySelectorAll('.pr')][1]);await wait(300);mark('sell-picked');
+  await tap(m.querySelector('#go'));hideTouch();
+  // who — by voice
+  m=await until('who');await wait(800);mark('who');await wait(300);
+  await holdToTalk(['בעיקר','נשים','צעירות,','מגיל','20','עד','40']);hideTouch();await wait(600);mark('who-picked');await wait(500);
+  await tap(m.querySelector('#go'));hideTouch();
+  // social
+  m=await until('social');await wait(600);mark('social');
+  await typeInto(m.querySelector('input'),'@studio.deen',70);await wait(300);await tap(m.querySelector('#go'));hideTouch();
+  // photos
+  m=await until('photos');await wait(800);mark('photos');await wait(300);
+  await tap(m.querySelector('#drop'),{hold:120});
+  await m.__add(PHOTOS);await wait(700);mark('photos-added');await wait(500);
+  await tap(m.querySelector('#go'));hideTouch();
+  // facebook
+  m=await until('fb');await wait(900);mark('facebook');await wait(500);
+  await tap(m.querySelector('#fbb'));hideTouch();
+  // phone
+  m=await until('phone');await wait(600);mark('phone');
+  await typeInto(m.querySelector('input'),'052-123-4567',70);await wait(400);mark('phone-typed');await tap(m.querySelector('#go'));hideTouch();
+  // finale
+  await new Promise(r=>{const f=()=>window.__mark==='finale'?r():setTimeout(f,100);f()});
+  await wait(1800);
+  await moveTo($('#cta'),700);touch.classList.add('down');$('#cta').classList.add('press');await wait(180);touch.classList.remove('down');$('#cta').classList.remove('press');await wait(500);hideTouch();
+  mark('done');document.title='DONE';
+}
+// the file input must not open a system dialog in autoplay
+if(!MANUAL)document.addEventListener('click',e=>{if(e.target.matches('input[type=file]')&&!e.isTrusted)e.preventDefault()},true);
+
+async function boot(){
+  await document.fonts.ready;await wait(300);
+  mark('boot');face('wave');
+  flow();
+  if(!MANUAL)script();
+}
+boot();
+</script>
+</body>
+</html>
